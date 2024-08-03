@@ -29,7 +29,7 @@ to_onnx(
     name: Optional[str] = None,
     threshold: Optional[float] = None,
     labels: Optional[np.ndarray] = None,
-    outputs: list[str] = None,
+    outputs: List[str] = ['winner'],
     opset: int = 18,
 ) -> ModelProto
 ```
@@ -40,7 +40,7 @@ to_onnx(
 - **name**: *(Optional)* A string specifying the name of the ONNX model. If not provided, a random uuid will be used.
 - **threshold**: *(Optional)* A float value representing the threshold for quantization error. If provided, an additional node indicating whether the quantization error exceeds this threshold will be included in the ONNX model.
 - **labels**: *(Optional)* A 2D numpy array containing labels corresponding to the SOM grid. If provided, an additional node mapping the best matching unit (BMU) to a label will be included.
-- **outputs**: A list of strings specifying the desired output names to include in the final model.
+- **outputs**: A list of strings specifying the desired output names to include in the final model. The default value is ['winner'].
 - **opset**: *(Optional)* An integer specifying the ONNX opset version to use. The default value is 18.
 
 ### Outputs
@@ -76,7 +76,7 @@ som.random_weights_init(data)
 som.train_random(data, 100)
 
 # Convert the model to ONNX
-onnx_model = to_onnx(som, name="SOMModel", outputs=["winner"])
+onnx_model = to_onnx(som, name="SOMModel")
 
 # Save the model
 import onnx

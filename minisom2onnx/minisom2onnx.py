@@ -2,7 +2,7 @@
 This module provides functions for converting MiniSom model to ONNX.
 """
 
-from typing import Optional
+from typing import List, Optional
 from uuid import uuid4
 
 import numpy as np
@@ -44,22 +44,22 @@ CLASS_NAME = "class"
 def _to_onnx(
     weights: np.ndarray, distance_function_name: str, model_name: str, opset: int
 ) -> ModelProto:
-    weights = weights.astype(np.float32)
+    weights = weights.astype(np.float64)
     weight_tensor = numpy_helper.from_array(weights, name=WEIGHTS_NAME)
     input_dim = weights.shape[-1]
     grid_shape = np.array(weights.shape[:2], dtype=np.int64)
 
     input_tensor = helper.make_tensor_value_info(
-        INPUT_NAME, TensorProto.FLOAT, [None, input_dim]
+        INPUT_NAME, TensorProto.DOUBLE, [None, input_dim]
     )
     distance_output = helper.make_tensor_value_info(
-        DISTANCE_FROM_WEIGHTS_NAME, TensorProto.FLOAT, [None, int(np.prod(grid_shape))]
+        DISTANCE_FROM_WEIGHTS_NAME, TensorProto.DOUBLE, [None, int(np.prod(grid_shape))]
     )
     quantization_output = helper.make_tensor_value_info(
-        QUANTIZATION_NAME, TensorProto.FLOAT, [None, input_dim]
+        QUANTIZATION_NAME, TensorProto.DOUBLE, [None, input_dim]
     )
     quantization_error_output = helper.make_tensor_value_info(
-        QUANTIZATION_ERROR_NAME, TensorProto.FLOAT, [None, 1]
+        QUANTIZATION_ERROR_NAME, TensorProto.DOUBLE, [None, 1]
     )
     winner_output = helper.make_tensor_value_info(
         WINNER_NAME, TensorProto.INT64, [None, 2]
@@ -163,7 +163,7 @@ def _add_quantization_error_thresholding_nodes(
     model: ModelProto, threshold: float
 ) -> ModelProto:
     threshold_tensor = numpy_helper.from_array(
-        np.array([threshold], dtype=np.float32), name=THRESHOLD_NAME
+        np.array([threshold], dtype=np.float64), name=THRESHOLD_NAME
     )
     model.graph.initializer.append(threshold_tensor)
 
@@ -212,7 +212,7 @@ def to_onnx(
     name: Optional[str] = None,
     threshold: Optional[float] = None,
     labels: Optional[np.ndarray] = None,
-    outputs: Optional[list[str]] = None,
+    outputs: List[str] = [WINNER_NAME],
     opset: int = 18,
 ) -> ModelProto:
     """
@@ -225,8 +225,8 @@ def to_onnx(
             thresholding nodes to the model.
         labels (np.ndarray, optional): A 2D array of labels matching the SOM grid
             shape. If provided, adds label mapping nodes to the model.
-        outputs (list of str, optional): A list of output names to include in the
-            final model. If provided, filters the outputs to include only these.
+        outputs (list of str, optional): A list of output names to include in the final model.
+            Default is ['winner']
             Available Outputs:
             - 'distance': Distance.
             - 'quantization': Code book BMU (weights vector of the winning neuron) of

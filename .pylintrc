@@ -1,0 +1,20 @@
+[MESSAGES CONTROL]
+# Disable the following pylint warnings
+disable=
+    protected-access,
+    too-many-branches,
+    too-many-locals,
+    dangerous-default-value
+
+[MASTER]
+ignore-patterns=test_*.py
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=100
+
+[DESIGN]
+# Maximum number of arguments for function / method.
+max-args=10
+
+
