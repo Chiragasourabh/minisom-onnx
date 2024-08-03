@@ -59,11 +59,13 @@ Additional outputs are available based on the optional parameters:
 
 ## Usage
 
-Here's a basic example of how to use `minisom2onnx`:
+Here’s a basic example of how to use `minisom2onnx` to convert a trained MiniSom model to ONNX format:
+
 
 ```python
 from minisom import MiniSom
 import numpy as np
+import random
 from minisom2onnx import to_onnx
 
 data = np.random.rand(100, 4)
@@ -82,29 +84,61 @@ onnx.save(onnx_model, 'som_model.onnx')
 
 ````
 
-Here is an example of how to use `minisom2onnx` with labels
+### Using Labels
+
+To include label information in your ONNX model, you can provide `labels` during conversion. Here’s an example:
 
 ```python
 from minisom import MiniSom
 import numpy as np
+import random
 from minisom2onnx import to_onnx
 
-# Create and train a MiniSom model
 dim = 10
 data = np.random.rand(100, 4)
-target = [random.randint(1, 3) for i in range(100)]
+target = [random.randint(1, 2) for i in range(100)]
 
-som = MiniSom(dim, dim, data.shape[1], sigma=0.3, learning_rate=0.5, neighborhood_function='triangle', random_seed=10)
-som.random_weights_init(data)
-som.train_random(data, 100)
+# Create and train a MiniSom model
+som = MiniSom(dim, dim, data.shape[1], sigma=3, learning_rate=0.5, neighborhood_function='triangle', random_seed=10)
+som.pca_weights_init(data)
+som.train(data, 1000, random_order=True, use_epochs=True)
 
-default_label = -1
+default_label = 0
 labels = np.full((dim, dim), fill_value=default_label, dtype=int)
 for position, counter in som.labels_map(data, target).items():
     labels[position] = max(counter, key=counter.get)
 
 # Convert the model to ONNX
 onnx_model = to_onnx(som, name="SOMClassifier", labels=labels, outputs=["class"])
+
+# Save the model
+import onnx
+onnx.save(onnx_model, 'som_model.onnx')
+```
+
+### Using Thresholding
+
+If you want to include threshold-based outlier detection in your ONNX model, you can specify a `threshold`. Here’s how:
+
+```python
+from minisom import MiniSom
+import numpy as np
+import random
+from minisom2onnx import to_onnx
+
+dim = 10
+data = np.random.rand(100, 4)
+target = [random.randint(1, 2) for i in range(100)]
+
+# Create and train a MiniSom model
+som = MiniSom(dim, dim, data.shape[1], sigma=3, learning_rate=0.5, neighborhood_function='triangle', random_seed=10)
+som.train(data, 1000, random_order=True, use_epochs=True)
+
+quantization_errors = np.array([som.quantization_error([x]) for x in data])
+threshold = np.percentile(quantization_errors, 95)
+
+# Convert the model to ONNX
+onnx_model = to_onnx(som, name="SOMOutlier", threshold=threshold, outputs=["outlier"])
 
 # Save the model
 import onnx
