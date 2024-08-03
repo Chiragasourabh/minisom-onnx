@@ -2,10 +2,13 @@
 This module provides functions for converting MiniSom model to ONNX.
 """
 
-from uuid import uuid4
 from typing import Optional
+from uuid import uuid4
+
 import numpy as np
-from onnx import TensorProto, ModelProto, helper, numpy_helper
+from onnx import ModelProto, TensorProto, helper, numpy_helper
+
+from .version import __version__
 
 # Mapping of MiniSom distance functions to their CDist equivalent metric
 _distance_functions = {
@@ -39,7 +42,7 @@ CLASS_NAME = "class"
 
 
 def _to_onnx(
-    weights: np.ndarray, distance_function_name: str, name: str, opset: int
+    weights: np.ndarray, distance_function_name: str, model_name: str, opset: int
 ) -> ModelProto:
     weights = weights.astype(np.float32)
     weight_tensor = numpy_helper.from_array(weights, name=WEIGHTS_NAME)
@@ -68,6 +71,7 @@ def _to_onnx(
     weights_flat_shape_tensor = numpy_helper.from_array(
         np.array([-1, weights.shape[2]], dtype=np.int64), name=WEIGHTS_FLAT_SHAPE_NAME
     )
+    one_tensor = numpy_helper.from_array(np.array([1], dtype=np.int64), name=ONE_NAME)
 
     reshape_weights = helper.make_node(
         "Reshape",
@@ -129,7 +133,7 @@ def _to_onnx(
             diff,
             quantization_error,
         ],
-        name=name,
+        name=model_name,
         inputs=[input_tensor],
         outputs=[
             distance_output,
@@ -140,7 +144,7 @@ def _to_onnx(
         initializer=[
             weight_tensor,
             weights_flat_shape_tensor,
-            numpy_helper.from_array(np.array([1], dtype=np.int64), name=ONE_NAME),
+            one_tensor,
             grid_shape_width_tensor,
         ],
     )
@@ -149,7 +153,7 @@ def _to_onnx(
     return helper.make_model(
         graph,
         producer_name="minisom2onnx",
-        producer_version="1.0",
+        producer_version=__version__,
         ir_version=10,
         opset_imports=opset_imports,
     )
@@ -224,7 +228,6 @@ def to_onnx(
         outputs (list of str, optional): A list of output names to include in the
             final model. If provided, filters the outputs to include only these.
             Available Outputs:
-            - 'weight': Weight.
             - 'distance': Distance.
             - 'quantization': Code book BMU (weights vector of the winning neuron) of
                 each sample in data.
@@ -293,7 +296,12 @@ def to_onnx(
     else:
         raise TypeError("`outputs` must be a list of strings.")
 
-    onnx_model = _to_onnx(weights, distance_function_name, name, opset)
+    onnx_model = _to_onnx(
+        weights=weights,
+        distance_function_name=distance_function_name,
+        model_name=name,
+        opset=opset,
+    )
 
     # Add thresholding nodes if a threshold is provided
     if threshold is not None:
