@@ -3,10 +3,15 @@ from minisom2onnx import __version__
 
 keywords = ["minisom", "onnx", "som", "machine learning", "self organising maps"]
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name="minisom2onnx",
     version=__version__,
     description="A library to convert MiniSom models to ONNX format",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Chiragasourabh",
     author_email="chiragasourabh@gmail.com",
     url="https://github.com/chiragasourabh/minisom2onnx",
@@ -19,6 +24,6 @@ setup(
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     keywords=keywords,
 )

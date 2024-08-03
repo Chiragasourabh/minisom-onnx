@@ -17,7 +17,7 @@ You can install the library using `pip`:
 pip install minisom2onnx
 ```
 
-## `to_onnx` Function
+## API
 
 The `to_onnx` function converts a trained MiniSom model to an ONNX format.
 

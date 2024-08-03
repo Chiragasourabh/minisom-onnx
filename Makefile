@@ -1,7 +1,7 @@
 .PHONY: setup install test lint publish clean
 
 setup:
-	pip install black pylint isort mypy wheel
+	pip install black pylint isort mypy wheel twine
 
 # Install the package and dependencies
 install:
@@ -24,7 +24,7 @@ build:
 	
 # Publish the package
 publish:
-	# twine upload dist/*
+	twine upload dist/*
 
 # Clean up build artifacts
 clean:
