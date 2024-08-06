@@ -15,7 +15,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Chiragasourabh",
     author_email="chiragasourabh@gmail.com",
-    url="https://github.com/chiragasourabh/minisom2onnx",
+    url="https://github.com/chiragasourabh/minisom-onnx",
     packages=find_packages(exclude=["*tests*"]),
     license="MIT",
     install_requires=["numpy", "onnx>=1.14.0", "minisom>=2.3.0"],
