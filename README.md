@@ -1,5 +1,10 @@
 # minisom-onnx
 
+[![PyPI version fury.io](https://badge.fury.io/py/minisom2onnx.svg)](https://pypi.org/project/minisom2onnx/)
+[![Downloads](https://static.pepy.tech/badge/minisom2onnx)](https://pepy.tech/project/minisom2onnx)
+[![License - MIT](https://img.shields.io/pypi/l/minisom2onnx.svg)](https://github.com/Chiragasourabh/minisom-onnx/blob/main/LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 `minisom2onnx`  is a Python library for converting MiniSom models to ONNX (Open Neural Network Exchange) format, allowing for deployment in various environments. It provides flexibility to include additional information, such as quantization error thresholds and label mappings.
 
 ## Features
