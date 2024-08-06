@@ -14,8 +14,10 @@ test:
 # Lint the code
 lint:
 	black --check minisom2onnx
+	black --check tests
 	pylint minisom2onnx
 	isort --check minisom2onnx
+	isort --check tests
 	mypy minisom2onnx
 
 # Publish the package

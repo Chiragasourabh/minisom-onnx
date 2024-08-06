@@ -27,10 +27,12 @@ The `to_onnx` function converts a trained MiniSom model to an ONNX format.
 to_onnx(
     model, 
     name: Optional[str] = None,
+    description: Optional[str] = None,
     threshold: Optional[float] = None,
     labels: Optional[np.ndarray] = None,
-    outputs: List[str] = ['winner'],
-    opset: int = 18,
+    outputs: Optional[List[str]] = ['winner'],
+    properties: Optional[Dict[str, str]] = {},
+    opset: Optional[int] = 18,
 ) -> ModelProto
 ```
 
@@ -38,9 +40,11 @@ to_onnx(
 
 - **model**: The trained MiniSom model to be converted.
 - **name**: *(Optional)* A string specifying the name of the ONNX model. If not provided, a random uuid will be used.
+- **description**: *(Optional)* A textual description of the ONNX model's graph.   
 - **threshold**: *(Optional)* A float value representing the threshold for quantization error. If provided, an additional node indicating whether the quantization error exceeds this threshold will be included in the ONNX model.
 - **labels**: *(Optional)* A 2D numpy array containing labels corresponding to the SOM grid. If provided, an additional node mapping the best matching unit (BMU) to a label will be included.
-- **outputs**: A list of strings specifying the desired output names to include in the final model. The default value is ['winner'].
+- **outputs**: *(Optional)* A list of strings specifying the desired output names to include in the final model. The default value is ['winner'].
+- **properties**: *(Optional)* A dictionary of additional properties to include in the model's metadata.
 - **opset**: *(Optional)* An integer specifying the ONNX opset version to use. The default value is 18.
 
 ### Outputs
@@ -128,7 +132,6 @@ from minisom2onnx import to_onnx
 
 dim = 10
 data = np.random.rand(100, 4)
-target = [random.randint(1, 2) for i in range(100)]
 
 # Create and train a MiniSom model
 som = MiniSom(dim, dim, data.shape[1], sigma=3, learning_rate=0.5, neighborhood_function='triangle', random_seed=10)

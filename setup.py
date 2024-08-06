@@ -1,4 +1,5 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
 from minisom2onnx import __version__
 
 keywords = ["minisom", "onnx", "som", "machine learning", "self organising maps"]

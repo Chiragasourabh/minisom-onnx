@@ -4,7 +4,8 @@ disable=
     protected-access,
     too-many-branches,
     too-many-locals,
-    dangerous-default-value
+    dangerous-default-value,
+    too-many-statements
 
 [MASTER]
 ignore-patterns=test_*.py

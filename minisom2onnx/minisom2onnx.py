@@ -2,13 +2,16 @@
 This module provides functions for converting MiniSom model to ONNX.
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 import numpy as np
 from onnx import ModelProto, TensorProto, helper, numpy_helper
 
 from .version import __version__
+
+__MIN_SUPPORTED_OPSET = 18
+__MAX_SUPPORTED_OPSET = 18
 
 # Mapping of MiniSom distance functions to their CDist equivalent metric
 _distance_functions = {
@@ -42,7 +45,11 @@ CLASS_NAME = "class"
 
 
 def _to_onnx(
-    weights: np.ndarray, distance_function_name: str, model_name: str, opset: int
+    weights: np.ndarray,
+    distance_function_name: str,
+    model_name: str,
+    doc_string: str,
+    opset=int,
 ) -> ModelProto:
     weights = weights.astype(np.float64)
     weight_tensor = numpy_helper.from_array(weights, name=WEIGHTS_NAME)
@@ -147,14 +154,18 @@ def _to_onnx(
             one_tensor,
             grid_shape_width_tensor,
         ],
+        doc_string=doc_string,
     )
 
-    opset_imports = [helper.make_operatorsetid("ai.onnx", opset)]
+    opset_imports = [
+        helper.make_opsetid("", opset),
+        helper.make_opsetid("com.microsoft", 1),
+    ]
     return helper.make_model(
         graph,
         producer_name="minisom2onnx",
         producer_version=__version__,
-        ir_version=10,
+        ir_version=7,
         opset_imports=opset_imports,
     )
 
@@ -207,13 +218,20 @@ def _add_winner_label_mapping_nodes(
     return model
 
 
+def _add_properties(model: ModelProto, properties: Dict[str, str]) -> ModelProto:
+    helper.set_model_props(model=model, dict_value=properties)
+    return model
+
+
 def to_onnx(
     model,  # Type is omitted here due to MiniSom dependency
     name: Optional[str] = None,
+    description: Optional[str] = None,
     threshold: Optional[float] = None,
     labels: Optional[np.ndarray] = None,
-    outputs: List[str] = [WINNER_NAME],
-    opset: int = 18,
+    outputs: Optional[List[str]] = [WINNER_NAME],
+    properties: Optional[Dict[str, str]] = {},
+    opset: Optional[int] = 18,
 ) -> ModelProto:
     """
     Converts a MiniSom model to an ONNX model with optional thresholding and label mapping.
@@ -221,6 +239,7 @@ def to_onnx(
     Args:
         model: A trained MiniSom object.
         name (str, optional): The name of the ONNX model.
+        description (str, optional): A textual description of the ONNX model's graph.
         threshold (float, optional): Threshold for thresholding. If provided, adds
             thresholding nodes to the model.
         labels (np.ndarray, optional): A 2D array of labels matching the SOM grid
@@ -237,6 +256,8 @@ def to_onnx(
             - 'outlier': A binary indicator of whether the input data is greater than
                 the threshold (only if `threshold` is provided).
             - 'class': The label of the BMU (only if `labels` is provided).
+        properties (dict of str, optional): A dictionary of additional properties to include in the
+            model's metadata.
         opset (int, optional): The ONNX opset version to use. Default is 18.
 
     Returns:
@@ -267,6 +288,11 @@ def to_onnx(
 
     if not isinstance(opset, int):
         raise TypeError("`opset` must be an int")
+    if not __MIN_SUPPORTED_OPSET <= opset <= __MAX_SUPPORTED_OPSET:
+        raise ValueError(
+            f"Invalid opset version: {opset}. Supported opset versions are between "
+            f"{__MIN_SUPPORTED_OPSET} and {__MAX_SUPPORTED_OPSET}."
+        )
 
     weights = model.get_weights()
 
@@ -296,20 +322,41 @@ def to_onnx(
     else:
         raise TypeError("`outputs` must be a list of strings.")
 
+    if properties and (
+        not isinstance(properties, dict)
+        or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in properties.items()
+        )
+    ):
+        raise TypeError("`props` must be a dict with string keys and values.")
+
+    if description:
+        if not isinstance(description, str):
+            raise TypeError("`description` must be a string.")
+    else:
+        description = ""
+
     onnx_model = _to_onnx(
         weights=weights,
         distance_function_name=distance_function_name,
         model_name=name,
+        doc_string=description,
         opset=opset,
     )
 
     # Add thresholding nodes if a threshold is provided
     if threshold is not None:
-        onnx_model = _add_quantization_error_thresholding_nodes(onnx_model, threshold)
+        onnx_model = _add_quantization_error_thresholding_nodes(
+            model=onnx_model, threshold=threshold
+        )
 
     # Add label mapping nodes if labels are provided
     if labels is not None:
-        onnx_model = _add_winner_label_mapping_nodes(onnx_model, labels)
+        onnx_model = _add_winner_label_mapping_nodes(model=onnx_model, labels=labels)
+
+    # Add label mapping nodes if labels are provided
+    if properties is not None:
+        onnx_model = _add_properties(model=onnx_model, properties=properties)
 
     # Filter the outputs if a list of output names is provided
     if outputs is not None:
