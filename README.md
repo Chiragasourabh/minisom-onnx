@@ -55,6 +55,7 @@ to_onnx(
 ### Outputs
 By default, the following outputs are available:
 
+- `weights`: The original weights of the MiniSom model.
 - `distance`: The distance between each input sample and the weights vector of the winning neuron.
 - `quantization`: The code book BMU (weights vector of the winning neuron) for each sample in the data.
 - `quantization_error`: The quantization error, calculated as the distance between each input sample and its best matching unit.
@@ -65,6 +66,16 @@ Additional outputs are available based on the optional parameters:
 - `outlier`: A binary indicator of whether the quantization error exceeds the provided threshold. This output is only available if the threshold parameter is specified.
 - `class`: The label of the BMU. This output is only available if the labels parameter is provided.
 
+---
+**NOTE:**
+
+The MiniSom model supports several distance functions, including `euclidean`, `cosine`, `manhattan`, and `chebyshev`. However, the ONNX operator `CDist` currently has an implementation only for `euclidean` distance. As a result, while the model can be exported to ONNX successfully, onnxruntime will fail if a distance function other than `euclidean` (default) is used.
+
+Additionally, MiniSom allows for custom distance functions. If a custom distance function is employed in the model, the `to_onnx` with throw an *ValueError: Unsupported activation_distance*
+
+For reliable inference, it is recommended to use the `euclidean` distance function with your MiniSom model when exporting to ONNX.
+
+---
 
 ## Usage
 

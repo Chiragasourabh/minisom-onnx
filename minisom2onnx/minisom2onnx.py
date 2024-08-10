@@ -36,7 +36,6 @@ DIFF_NAME = "diff"
 QUANTIZATION_ERROR_NAME = "quantization_error"
 ONE_NAME = "one"
 GRID_SHAPE_WIDTH_NAME = "grid_shape_width"
-WEIGHTS_FLAT_SHAPE_NAME = "weights_flat_shape"
 THRESHOLD_NAME = "threshold"
 IS_ABOVE_THRESHOLD_NAME = "is_above_threshold"
 OUTLIER_NAME = "outlier"
@@ -54,10 +53,16 @@ def _to_onnx(
     weights = weights.astype(np.float64)
     weight_tensor = numpy_helper.from_array(weights, name=WEIGHTS_NAME)
     input_dim = weights.shape[-1]
+    weight_flat_tensor = numpy_helper.from_array(
+        weights.reshape(-1, input_dim), name=WEIGHTS_FLAT_NAME
+    )
     grid_shape = np.array(weights.shape[:2], dtype=np.int64)
 
     input_tensor = helper.make_tensor_value_info(
         INPUT_NAME, TensorProto.DOUBLE, [None, input_dim]
+    )
+    weight_output = helper.make_tensor_value_info(
+        WEIGHTS_NAME, TensorProto.DOUBLE, weights.shape
     )
     distance_output = helper.make_tensor_value_info(
         DISTANCE_FROM_WEIGHTS_NAME, TensorProto.DOUBLE, [None, int(np.prod(grid_shape))]
@@ -75,16 +80,7 @@ def _to_onnx(
     grid_shape_width_tensor = numpy_helper.from_array(
         np.array([grid_shape[1]], dtype=np.int64), name=GRID_SHAPE_WIDTH_NAME
     )
-    weights_flat_shape_tensor = numpy_helper.from_array(
-        np.array([-1, weights.shape[2]], dtype=np.int64), name=WEIGHTS_FLAT_SHAPE_NAME
-    )
     one_tensor = numpy_helper.from_array(np.array([1], dtype=np.int64), name=ONE_NAME)
-
-    reshape_weights = helper.make_node(
-        "Reshape",
-        inputs=[WEIGHTS_NAME, WEIGHTS_FLAT_SHAPE_NAME],
-        outputs=[WEIGHTS_FLAT_NAME],
-    )
 
     metric = _distance_functions.get(distance_function_name)
     distances = helper.make_node(
@@ -130,7 +126,6 @@ def _to_onnx(
 
     graph = helper.make_graph(
         nodes=[
-            reshape_weights,
             distances,
             winners_coords,
             row_indices,
@@ -143,6 +138,7 @@ def _to_onnx(
         name=model_name,
         inputs=[input_tensor],
         outputs=[
+            weight_output,
             distance_output,
             quantization_output,
             quantization_error_output,
@@ -150,7 +146,7 @@ def _to_onnx(
         ],
         initializer=[
             weight_tensor,
-            weights_flat_shape_tensor,
+            weight_flat_tensor,
             one_tensor,
             grid_shape_width_tensor,
         ],
@@ -247,7 +243,8 @@ def to_onnx(
         outputs (list of str, optional): A list of output names to include in the final model.
             Default is ['winner']
             Available Outputs:
-            - 'distance': Distance.
+            - 'weights': Original weights of the MiniSom model.
+            - 'distance': Distance from weights.
             - 'quantization': Code book BMU (weights vector of the winning neuron) of
                 each sample in data.
             - 'quantization_error': The quantization error computed as distance between

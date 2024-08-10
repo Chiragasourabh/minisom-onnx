@@ -87,6 +87,12 @@ def test_labels_adds_class_output(setup_model):
 
 def test_properties_in_model(setup_model):
     model = setup_model
+
+    with pytest.raises(TypeError):
+        to_onnx(model, properties=["prop"])
+    with pytest.raises(TypeError):
+        to_onnx(model, properties={"a", 1})
+
     properties = {"topologicalError": "1.0", "quantizationError": "2.0"}
     onnx_model = to_onnx(model, properties=properties)
     # Assuming you have a method to extract properties from the model
@@ -105,6 +111,12 @@ def test_invalid_outputs(setup_model):
     # Test with invalid output names
     with pytest.raises(ValueError):
         to_onnx(model, outputs=["class"])
+
+    with pytest.raises(TypeError):
+        to_onnx(model, outputs="class")
+
+    with pytest.raises(TypeError):
+        to_onnx(model, outputs=None)
 
     with pytest.raises(ValueError):
         to_onnx(model, outputs=["invalid"])

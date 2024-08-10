@@ -1,7 +1,7 @@
 .PHONY: setup install test lint publish clean
 
 setup:
-	pip install black pylint isort mypy wheel twine
+	pip install black pylint isort mypy wheel twine pytest-cov pytest
 
 # Install the package and dependencies
 install:
