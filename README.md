@@ -160,3 +160,82 @@ onnx_model = to_onnx(som, name="SOMOutlier", threshold=threshold, outputs=["outl
 import onnx
 onnx.save(onnx_model, 'som_model.onnx')
 ```
+
+## ONNX Runtime Inference
+
+Once you've converted and saved your MiniSom model to ONNX format, you can use ONNX Runtime for fast inference. First, install ONNX Runtime:
+
+```bash
+pip install onnxruntime
+```
+
+Here are examples of how to use the converted models for inference:
+
+### Basic Inference
+
+```python
+import onnxruntime as ort
+import numpy as np
+
+# Load the ONNX model
+session = ort.InferenceSession('som_model.onnx')
+
+# Prepare input data
+test_data = np.random.rand(10, 4)
+
+# Run inference
+input_name = session.get_inputs()[0].name
+output_names = [output.name for output in session.get_outputs()]
+
+results = session.run(output_names, {input_name: test_data})
+
+# The results will contain outputs based on what you specified during conversion
+print(f"Available outputs: {output_names}")
+for i, output_name in enumerate(output_names):
+    print(f"{output_name}: {results[i]}")
+```
+
+### Classification Inference
+
+For models with label mapping:
+
+```python
+import onnxruntime as ort
+import numpy as np
+
+# Load the classification ONNX model
+session = ort.InferenceSession('som_model.onnx')
+
+# Prepare input data
+test_data = np.random.rand(5, 4)
+
+# Run inference
+input_name = session.get_inputs()[0].name
+results = session.run(['class'], {input_name: test_data})
+
+predicted_classes = results[0]
+print(f"Predicted classes: {predicted_classes}")
+```
+
+### Outlier Detection Inference
+
+For models with threshold-based outlier detection:
+
+```python
+import onnxruntime as ort
+import numpy as np
+
+# Load the outlier detection ONNX model
+session = ort.InferenceSession('som_model.onnx')
+
+# Prepare input data
+test_data = np.random.rand(5, 4)
+
+# Run inference
+input_name = session.get_inputs()[0].name
+results = session.run(['outlier'], {input_name: test_data})
+
+outlier_flags = results[0]  # Boolean array indicating outliers
+
+print(f"Outlier flags: {outlier_flags}")
+```
